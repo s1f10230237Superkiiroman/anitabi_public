@@ -66,10 +66,20 @@
 
 ## 主な機能
 - 🔍 **作品・地域・ジャンル別検索**
+- <img width="1242" height="837" alt="スクリーンショット 2026-01-30 083422" src="https://github.com/user-attachments/assets/721f1a6b-e607-4b12-9cec-c8f6be8ef2f1" />
+
 - 🗺 **聖地マップ表示（Leaflet + OpenStreetMap）**
+- <img width="1873" height="839" alt="スクリーンショット 2026-01-30 083311" src="https://github.com/user-attachments/assets/0a6b7638-91f2-40d6-acf5-95eb898f4bc2" />
+
 - 📍 **GPSを用いたルートガイド**
+- <img width="1298" height="843" alt="スクリーンショット 2026-01-30 084005" src="https://github.com/user-attachments/assets/52ce8ae4-9ce7-4954-bac5-11d6bf2e9bf0" />
+
 - 🏅 **スタンプラリー・称号機能**
+- <img width="1462" height="860" alt="スクリーンショット 2026-01-30 084331" src="https://github.com/user-attachments/assets/047bb449-65e5-453c-8e34-98dfeb06564b" />
+
 - 📝 **投稿機能（写真・コメント）**
+- <img width="840" height="782" alt="スクリーンショット 2026-01-30 084617" src="https://github.com/user-attachments/assets/cada3ea1-026b-45db-9b5f-187083fad5a9" />
+
 - ❤️ **お気に入り登録**
 - 👤 **プロフィール管理**
 
