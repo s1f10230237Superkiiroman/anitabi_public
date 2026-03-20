@@ -1,0 +1,148 @@
+{% load static %}
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{% trans "アニメ聖地マップ" %}</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <style>
+        body { margin: 0; }
+        .main-content {
+            margin-left: 0;
+            padding-top: 60px;
+            transition: margin-left 0.3s;
+            min-height: 100vh;
+        }
+        .popup-img {
+            width: 150px;
+            height: auto;
+            display: block;
+            margin-bottom: 5px;
+            border-radius: 4px;
+        }
+        /* ユーザーメニュー等のスタイル */
+        .user-menu-container { position: fixed; top: 10px; right: 20px; z-index: 2000; }
+        .user-menu-btn { background: #333; color: #fff; padding: 8px 12px; border-radius: 6px; cursor: pointer; border: 1px solid #555; }
+        .user-menu { display: none; position: absolute; right: 0; background: #222; color: #fff; border-radius: 6px; width: 180px; border: 1px solid #444; margin-top: 8px; }
+        .user-menu a, .user-menu button { display: block; padding: 10px; width: 100%; background: none; border: none; color: #fff; text-decoration: none; text-align: left; }
+        .user-menu a:hover, .user-menu button:hover { background: #333; }
+    </style>
+
+    <script>
+        function openNav() {
+            document.getElementById("mySidebar").style.width = "250px";
+            document.getElementById("main-content").style.marginLeft = "250px";
+            if (typeof map !== 'undefined') { setTimeout(() => { map.invalidateSize(); }, 350); }
+        }
+        function closeNav() {
+            document.getElementById("mySidebar").style.width = "0";
+            document.getElementById("main-content").style.marginLeft = "0";
+            if (typeof map !== 'undefined') { setTimeout(() => { map.invalidateSize(); }, 350); }
+        }
+        function toggleUserMenu() {
+            const menu = document.getElementById("userMenu");
+            menu.style.display = (menu.style.display === "block") ? "none" : "block";
+        }
+    </script>
+</head>
+
+<body>
+    {% include 'spots/sidebar.html' %}
+
+    <div class="user-menu-container">
+        <button class="user-menu-btn" onclick="toggleUserMenu()">
+            {% if user.is_authenticated %}
+                👤 {{ user.username }}
+            {% else %}
+                {% trans "ログイン" %}
+            {% endif %}
+        </button>
+        <div id="userMenu" class="user-menu">
+            {% if user.is_authenticated %}
+                {% if profile and profile.icon %}
+                    <div style="text-align:center; padding:10px;">
+                        <img src="{{ profile.icon.url }}" alt="icon" style="width:60px; height:60px; border-radius:50%; object-fit: cover;">
+                    </div>
+                {% endif %}
+                <a href="{% url 'profile_edit' %}">{% trans "プロフィール編集" %}</a>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" style="color: #ff4444;">{% trans "ログアウト" %}</button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}">{% trans "ログイン" %}</a>
+                <a href="{% url 'signup' %}">{% trans "新規登録" %}</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div id="main-content" class="main-content">
+        <h1>{% trans "アニメ聖地マップ" %}</h1>
+        <div id="map" style="height: 600px; width: 100%; border-radius: 10px; border: 2px solid #333; z-index: 1;"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // 地図の初期化
+        var map = L.map('map').setView([35.681236, 139.767125], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+            attribution: '© OpenStreetMap contributors' 
+        }).addTo(map);
+
+        // データエラー対策済みスポットデータ
+        const spots = [
+          {% for spot in spots %}
+            {
+              title: "{{ spot.title|escapejs }}",
+              location: "{{ spot.location|escapejs }}",
+              description: "{{ spot.description|escapejs }}",
+              latitude: {{ spot.latitude|default:0 }},
+              longitude: {{ spot.longitude|default:0 }},
+              image_url: "{{ spot.image_url|default:''|escapejs }}"
+            }{% if not forloop.last %},{% endif %}
+          {% endfor %}
+        ];
+
+        spots.forEach(function(spot) {
+            if (spot.latitude === 0 && spot.longitude === 0) return;
+
+            let popupContent = `<strong>${spot.title}</strong><br>${spot.location}`;
+            if (spot.image_url) {
+                popupContent = `<img src="${spot.image_url}" class="popup-img"><br>` + popupContent;
+            }
+            L.marker([spot.latitude, spot.longitude]).addTo(map).bindPopup(popupContent);
+        });
+
+        // URLパラメータ処理
+        const urlParams = new URLSearchParams(window.location.search);
+        const lat = parseFloat(urlParams.get("lat"));
+        const lng = parseFloat(urlParams.get("lng"));
+        if (!isNaN(lat) && !isNaN(lng)) {
+            map.setView([lat, lng], 14);
+            L.marker([lat, lng]).addTo(map).bindPopup("📍 {% trans '選択された聖地' %}").openPopup();
+        }
+
+        // 現在地処理
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(pos) {
+                    const uLat = pos.coords.latitude;
+                    const uLng = pos.coords.longitude;
+                    const icon = L.icon({
+                        iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 30],
+                        popupAnchor: [0, -25]
+                    });
+                    L.marker([uLat, uLng], {icon: icon}).addTo(map).bindPopup("📍 {% trans '現在地' %}").openPopup();
+                },
+                function(err) { console.log("位置情報取得エラー: " + err.message); }
+            );
+        }
+    </script>
+</body>
+</html>
